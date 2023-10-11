@@ -53,6 +53,29 @@ func (c *Client) SendRequest(req *http.Request, v interface{}) error {
 	return nil
 }
 
+func (c *Client) Request(req *http.Request) ([]byte, error) {
+	var (
+		byteBody []byte
+		err      error
+	)
+	res, err := c.config.Client.Do(req)
+	if err != nil {
+		return byteBody, err
+	}
+
+	defer res.Body.Close()
+
+	byteBody, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return byteBody, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return byteBody, c.httpCodeError(req.URL.String(), res.StatusCode, string(byteBody))
+	}
+
+	return byteBody, nil
+}
+
 func (c *Client) NewRequest(ctx context.Context, method string, url string, body interface{}) (*http.Request, error) {
 	req, err := c.requestBuilder.jsonBuild(ctx, method, c.fullURL(url), body)
 	if err != nil {
