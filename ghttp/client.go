@@ -65,10 +65,7 @@ func (c *Client) Request(req *http.Request) ([]byte, error) {
 
 	defer res.Body.Close()
 
-	byteBody, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		return byteBody, err
-	}
+	byteBody, _ = ioutil.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		return byteBody, c.httpCodeError(req.URL.String(), res.StatusCode, string(byteBody))
 	}
