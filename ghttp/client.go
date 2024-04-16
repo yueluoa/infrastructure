@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
 type Client struct {
 	config         ClientConfig
 	requestBuilder requestBuilder
+}
+
+type RawResponse struct {
+	Body string
 }
 
 func NewClient(opts ...Option) *Client {
@@ -39,7 +43,7 @@ func (c *Client) SendRequest(req *http.Request, v interface{}) error {
 
 	defer res.Body.Close()
 
-	byteBody, _ := ioutil.ReadAll(res.Body)
+	byteBody, _ := io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		return c.httpCodeError(req.URL.String(), res.StatusCode, string(byteBody))
 	}
@@ -51,6 +55,26 @@ func (c *Client) SendRequest(req *http.Request, v interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *Client) SendRequestRaw(req *http.Request) (*RawResponse, error) {
+	var response = &RawResponse{}
+
+	res, err := c.config.Client.Do(req)
+	if err != nil {
+		return response, err
+	}
+
+	defer res.Body.Close()
+
+	byteBody, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return response, c.httpCodeError(req.URL.String(), res.StatusCode, string(byteBody))
+	}
+
+	response.Body = string(byteBody)
+
+	return response, nil
 }
 
 func (c *Client) Request(req *http.Request) ([]byte, error) {
@@ -65,7 +89,7 @@ func (c *Client) Request(req *http.Request) ([]byte, error) {
 
 	defer res.Body.Close()
 
-	byteBody, _ = ioutil.ReadAll(res.Body)
+	byteBody, _ = io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		return byteBody, c.httpCodeError(req.URL.String(), res.StatusCode, string(byteBody))
 	}
